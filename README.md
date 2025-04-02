@@ -146,6 +146,12 @@ curl http://localhost:9200
 # Ensure Elasticsearch container is running
 docker ps | grep elasticsearch
 ```
+## Screenshots
+![Screenshot 2025-04-02 150054](https://github.com/user-attachments/assets/f9cca19d-ecf3-4762-a16c-2678094fab35)
+![Screenshot 2025-04-02 150107](https://github.com/user-attachments/assets/630bfaa1-ab12-4e90-a5af-9a0b11607d6a)
+![Screenshot 2025-04-02 150143](https://github.com/user-attachments/assets/b8f8648a-6c1e-4202-b357-cfc14ea63364)
+![Screenshot 2025-04-02 150159](https://github.com/user-attachments/assets/7389cb0e-ad3a-408f-a8a9-a251003bb44c)
+![Screenshot 2025-04-02 150214](https://github.com/user-attachments/assets/4c289aae-7344-4801-8189-859ad06c5caf)
 
 ## Security Considerations
 This honeypot is designed to attract attackers. Deploy it in a controlled environment and monitor it closely. Consider:
