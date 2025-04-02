@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DICOM Honeypot - Security Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-bg: #ecf0f1;
+            --dark-bg: #2c3e50;
+            --text-color: #34495e;
+            --light-text: #ecf0f1;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --info-color: #3498db;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        .navbar {
+            background-color: var(--dark-bg);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: var(--light-text) !important;
+        }
+        
+        .nav-link {
+            font-weight: 500;
+            color: rgba(255,255,255,0.8) !important;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            color: #fff !important;
+        }
+        
+        .dashboard-header {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .dashboard-title {
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .dashboard-subtitle {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+        
+        .stats-card {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+            height: 100%;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stats-card .icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .stats-card .number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            line-height: 1;
+        }
+        
+        .stats-card .label {
+            color: #7f8c8d;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        
+        .chart-card {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .chart-card .card-title {
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .events-table {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .events-table .table {
+            margin-bottom: 0;
+        }
+        
+        .events-table th {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .badge-event {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 0.8rem;
+        }
+        
+        .badge-c-echo { background-color: #3498db; color: white; }
+        .badge-c-find { background-color: #2ecc71; color: white; }
+        .badge-c-move { background-color: #f39c12; color: white; }
+        .badge-c-store { background-color: #9b59b6; color: white; }
+        .badge-association { background-color: #34495e; color: white; }
+        
+        .refresh-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .refresh-btn i {
+            margin-right: 5px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .status-active { background-color: var(--success-color); }
+        .status-inactive { background-color: var(--danger-color); }
+        
+        footer {
+            background-color: #fff;
+            padding: 15px 0;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-shield-lock"></i> DICOM Honeypot
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="index.html">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="events.html">
+                            <i class="bi bi-list-ul"></i> Events
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="analytics.html">
+                            <i class="bi bi-graph-up"></i> Analytics
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="config.html">
+                            <i class="bi bi-gear"></i> Configuration
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="about.html">
+                            <i class="bi bi-info-circle"></i> About
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="system-status">
+                            <span class="status-indicator status-active"></span> System Active
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="dashboard-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="dashboard-title">DICOM Security Dashboard</h1>
+                    <p class="dashboard-subtitle">Real-time monitoring of DICOM protocol attacks and unauthorized access attempts</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="refresh-btn" id="refresh-dashboard">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh Data
+                    </button>
+                    <span class="ms-2 text-muted" id="last-updated">Last updated: Just now</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-3 mb-4">
+                <div class="stats-card">
+                    <div class="icon text-primary">
+                        <i class="bi bi-activity"></i>
+                    </div>
+                    <div class="number text-primary" id="total-events">0</div>
+                    <div class="label">Total Events</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="stats-card">
+                    <div class="icon text-success">
+                        <i class="bi bi-link"></i>
+                    </div>
+                    <div class="number text-success" id="total-connections">0</div>
+                    <div class="label">Total Connections</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="stats-card">
+                    <div class="icon text-warning">
+                        <i class="bi bi-lightning-charge"></i>
+                    </div>
+                    <div class="number text-warning" id="active-connections">0</div>
+                    <div class="label">Active Connections</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="stats-card">
+                    <div class="icon text-danger">
+                        <i class="bi bi-globe"></i>
+                    </div>
+                    <div class="number text-danger" id="unique-ips">0</div>
+                    <div class="label">Unique IPs</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="chart-card">
+                    <h5 class="card-title">
+                        <i class="bi bi-pie-chart"></i> Events by Type
+                    </h5>
+                    <div class="chart-container">
+                        <canvas id="events-by-type-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="chart-card">
+                    <h5 class="card-title">
+                        <i class="bi bi-clock"></i> Events by Hour
+                    </h5>
+                    <div class="chart-container">
+                        <canvas id="events-by-hour-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="chart-card">
+                    <h5 class="card-title">
+                        <i class="bi bi-people"></i> Top Client IPs
+                    </h5>
+                    <div class="chart-container">
+                        <canvas id="top-clients-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="chart-card">
+                    <h5 class="card-title">
+                        <i class="bi bi-list-check"></i> Recent Events
+                        <a href="events.html" class="float-end text-decoration-none" style="font-size: 0.8rem;">View All</a>
+                    </h5>
+                    <div class="events-table">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Type</th>
+                                    <th>Client IP</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-events-tbody">
+                                <tr>
+                                    <td colspan="4" class="text-center">Loading events...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>DICOM Protocol Honeypot Analyzer - A Security Research Project</p>
+            <p>© 2023 - All Rights Reserved</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = window.location.protocol + '//' + window.location.host;
+        const EVENTS_ENDPOINT = `${API_BASE}/api/events/`;
+        const EVENT_STATS_ENDPOINT = `${API_BASE}/api/stats/events`;
+        const CONNECTION_STATS_ENDPOINT = `${API_BASE}/api/stats/connections`;
+        const SYSTEM_STATUS_ENDPOINT = `${API_BASE}/api/config/status`;
+
+        let eventsByTypeChart;
+        let eventsByHourChart;
+        let topClientsChart;
+        
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+        
+        function formatEventType(eventType) {
+            let badgeClass = 'badge-association';
+            
+            if (eventType.includes('C-ECHO')) {
+                badgeClass = 'badge-c-echo';
+            } else if (eventType.includes('C-FIND')) {
+                badgeClass = 'badge-c-find';
+            } else if (eventType.includes('C-MOVE')) {
+                badgeClass = 'badge-c-move';
+            } else if (eventType.includes('C-STORE')) {
+                badgeClass = 'badge-c-store';
+            }
+            
+            return `<span class="badge badge-event ${badgeClass}">${eventType}</span>`;
+        }
+
+        function updateDashboard() {
+            document.getElementById('last-updated').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+            
+            fetch(EVENT_STATS_ENDPOINT)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('total-events').textContent = data.total_events.toLocaleString();
+                    
+                    updateEventsByTypeChart(data.events_by_type);
+                    
+                    updateEventsByHourChart(data.events_by_hour);
+                })
+                .catch(error => {
+                    console.error('Error fetching event stats:', error);
+                });
+            
+            fetch(CONNECTION_STATS_ENDPOINT)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('total-connections').textContent = data.total_connections.toLocaleString();
+                    document.getElementById('active-connections').textContent = data.active_connections.toLocaleString();
+                    document.getElementById('unique-ips').textContent = data.unique_ips.toLocaleString();
+                    
+                    updateTopClientsChart(data.top_clients);
+                })
+                .catch(error => {
+                    console.error('Error fetching connection stats:', error);
+                });
+            
+            fetch(SYSTEM_STATUS_ENDPOINT)
+                .then(response => response.json())
+                .then(data => {
+                    const statusIndicator = document.querySelector('#system-status .status-indicator');
+                    const statusText = document.getElementById('system-status');
+                    
+                    if (data.elasticsearch.status === 'connected') {
+                        statusIndicator.className = 'status-indicator status-active';
+                        statusText.innerHTML = `<span class="status-indicator status-active"></span> System Active`;
+                    } else {
+                        statusIndicator.className = 'status-indicator status-inactive';
+                        statusText.innerHTML = `<span class="status-indicator status-inactive"></span> System Issue`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching system status:', error);
+                    const statusIndicator = document.querySelector('#system-status .status-indicator');
+                    statusIndicator.className = 'status-indicator status-inactive';
+                    document.getElementById('system-status').innerHTML = `<span class="status-indicator status-inactive"></span> Connection Error`;
+                });
+            
+            fetch(`${EVENTS_ENDPOINT}?limit=5`)
+                .then(response => response.json())
+                .then(events => {
+                    const tbody = document.getElementById('recent-events-tbody');
+                    
+                    if (events.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center">No events found</td></tr>';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = '';
+                    
+                    events.forEach(event => {
+                        const row = document.createElement('tr');
+                        
+                        const formattedTime = formatTimestamp(event.timestamp);
+                        
+                        row.innerHTML = `
+                            <td>${formattedTime}</td>
+                            <td>${formatEventType(event.event_type)}</td>
+                            <td>${event.client_ip || 'N/A'}</td>
+                            <td>${event.event_data.message || 'N/A'}</td>
+                        `;
+                        
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching recent events:', error);
+                    const tbody = document.getElementById('recent-events-tbody');
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Error loading events</td></tr>';
+                });
+        }
+
+        function updateEventsByTypeChart(eventsByType) {
+            const ctx = document.getElementById('events-by-type-chart').getContext('2d');
+            
+            const labels = Object.keys(eventsByType);
+            const data = Object.values(eventsByType);
+            
+            const colors = [
+                '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#e74c3c',
+                '#1abc9c', '#34495e', '#d35400', '#2980b9', '#27ae60'
+            ];
+            
+            if (eventsByTypeChart) {
+                eventsByTypeChart.data.labels = labels;
+                eventsByTypeChart.data.datasets[0].data = data;
+                eventsByTypeChart.update('none');
+            } else {
+                eventsByTypeChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: colors.slice(0, labels.length),
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    boxWidth: 15,
+                                    padding: 15
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = Math.round((value / total) * 100);
+                                        return `${label}: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateEventsByHourChart(eventsByHour) {
+            const ctx = document.getElementById('events-by-hour-chart').getContext('2d');
+            
+            const sortedHours = Object.keys(eventsByHour).sort();
+            const data = sortedHours.map(hour => eventsByHour[hour]);
+            
+            if (eventsByHourChart) {
+                eventsByHourChart.data.labels = sortedHours;
+                eventsByHourChart.data.datasets[0].data = data;
+                eventsByHourChart.update('none');
+            } else {
+                eventsByHourChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: sortedHours,
+                        datasets: [{
+                            label: 'Events',
+                            data: data,
+                            backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                            borderColor: '#3498db',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#3498db',
+                            pointRadius: 4,
+                            tension: 0.3,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateTopClientsChart(topClients) {
+            const ctx = document.getElementById('top-clients-chart').getContext('2d');
+            
+            const labels = Object.keys(topClients);
+            const data = Object.values(topClients);
+            
+            if (topClientsChart) {
+                topClientsChart.data.labels = labels;
+                topClientsChart.data.datasets[0].data = data;
+                topClientsChart.update('none'); 
+            } else {
+                topClientsChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Connections',
+                            data: data,
+                            backgroundColor: '#2ecc71',
+                            borderColor: '#27ae60',
+                            borderWidth: 1,
+                            borderRadius: 5,
+                            maxBarThickness: 50
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDashboard();
+            
+            setInterval(updateDashboard, 30000);
+            
+            document.getElementById('refresh-dashboard').addEventListener('click', function() {
+                updateDashboard();
+                this.disabled = true;
+                setTimeout(() => {
+                    this.disabled = false;
+                }, 2000);
+            });
+        });
+    </script>
+</body>
+</html>

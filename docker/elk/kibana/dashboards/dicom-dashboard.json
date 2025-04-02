@@ -1,0 +1,32 @@
+{
+    "attributes": {
+      "title": "DICOM Honeypot Dashboard",
+      "hits": 0,
+      "description": "Dashboard for monitoring DICOM honeypot activity",
+      "panelsJSON": "[{\"embeddableConfig\":{},\"gridData\":{\"h\":15,\"i\":\"1\",\"w\":24,\"x\":0,\"y\":0},\"panelIndex\":\"1\",\"version\":\"7.14.0\",\"panelRefName\":\"panel_0\"},{\"embeddableConfig\":{},\"gridData\":{\"h\":15,\"i\":\"2\",\"w\":24,\"x\":24,\"y\":0},\"panelIndex\":\"2\",\"version\":\"7.14.0\",\"panelRefName\":\"panel_1\"},{\"embeddableConfig\":{},\"gridData\":{\"h\":15,\"i\":\"3\",\"w\":48,\"x\":0,\"y\":15},\"panelIndex\":\"3\",\"version\":\"7.14.0\",\"panelRefName\":\"panel_2\"}]",
+      "optionsJSON": "{\"hidePanelTitles\":false,\"useMargins\":true}",
+      "version": 1,
+      "timeRestore": false,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"query\":{\"language\":\"kuery\",\"query\":\"\"},\"filter\":[]}"
+      }
+    },
+    "references": [
+      {
+        "name": "panel_0",
+        "type": "visualization",
+        "id": "dicom-events-by-type"
+      },
+      {
+        "name": "panel_1",
+        "type": "visualization",
+        "id": "dicom-events-by-client"
+      },
+      {
+        "name": "panel_2",
+        "type": "visualization",
+        "id": "dicom-events-timeline"
+      }
+    ]
+  }
+  
